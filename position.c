@@ -86,7 +86,7 @@ int main(int argc,char **argv)
     if (feof(fptr))
       break;
 
-    if (bHaveStartIx && (line_no >= start_ix)) {
+    if (!bHaveStartIx || (line_no >= start_ix)) {
       sscanf(line,"%c %d %d",&pos,&bought_at,&sold_at);
 
       if (pos == 'L')
