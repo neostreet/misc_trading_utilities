@@ -9,8 +9,12 @@ enum enumTransType {
  TRANS_TYPE_SELL
 };
 
+#define MAX_DATESTR_LEN 20
+
 struct transaction {
   enumTransType eTransType;
+  char entered[MAX_DATESTR_LEN+1];
+  char filled[MAX_DATESTR_LEN+1];
   int filled_price;
   bool processed;
 };
@@ -40,6 +44,8 @@ int get_transaction(
   int line_len,
   int line_no,
   char **type_ptr_ptr,
+  char **entered_ptr_ptr,
+  char **filled_ptr_ptr,
   char **filled_price_ptr_ptr
 );
 
@@ -54,6 +60,8 @@ int main(int argc,char **argv)
   int line_no;
   int retval;
   char *type_ptr;
+  char *entered_ptr;
+  char *filled_ptr;
   char *filled_price_ptr;
   struct transaction work;
   vector<struct transaction> transactions;
@@ -85,7 +93,11 @@ int main(int argc,char **argv)
 
     line_no++;
 
-    retval = get_transaction(line,line_len,line_no,&type_ptr,&filled_price_ptr);
+    retval = get_transaction(line,line_len,line_no,
+      &type_ptr,
+      &entered_ptr,
+      &filled_ptr,
+      &filled_price_ptr);
 
     if (retval == -1)
       continue;
@@ -104,6 +116,8 @@ int main(int argc,char **argv)
       return 4;
     }
 
+    strcpy(work.entered,entered_ptr);
+    strcpy(work.filled,filled_ptr);
     sscanf(filled_price_ptr,"%d",&work.filled_price);
     work.processed = false;
     transactions.push_back(work);
@@ -138,11 +152,16 @@ int main(int argc,char **argv)
 
       current = ((double)-2 * commission) + multiplier * (double)points;
 
-      printf("insert into trade(type,entry_price,exit_price,delta)\n");
-      printf("values('%s',%d,%d,%lf);\n",
+      printf("insert into trade(type,entry_entered,entry_filled,entry_filled_price,"
+        "exit_entered,exit_filled,exit_filled_price,delta)\n");
+      printf("values('%s','%s','%s',%d,'%s','%s',%d,%lf);\n",
         ((transactions[n].eTransType == TRANS_TYPE_BUY) ?
           position_abbrevs[POS_LONG] : position_abbrevs[POS_SHORT]),
+        transactions[n].entered,
+        transactions[n].filled,
         transactions[n].filled_price,
+        transactions[m].entered,
+        transactions[m].filled,
         transactions[m].filled_price,
         current);
 
@@ -185,6 +204,8 @@ int get_transaction(
   int line_len,
   int line_no,
   char **type_ptr_ptr,
+  char **entered_ptr_ptr,
+  char **filled_ptr_ptr,
   char **filled_price_ptr_ptr
 )
 {
@@ -213,6 +234,14 @@ int get_transaction(
         line[n] = 0;
 
       switch(tab_ix) {
+        case 1:
+          *entered_ptr_ptr = &line[n+1];
+
+          break;
+        case 2:
+          *filled_ptr_ptr = &line[n+1];
+
+          break;
         case 5:
           *type_ptr_ptr = &line[n+1];
 
