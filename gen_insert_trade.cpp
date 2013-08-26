@@ -153,8 +153,8 @@ int main(int argc,char **argv)
       current = ((double)-2 * commission) + multiplier * (double)points;
 
       printf("insert into trade(type,entry_entered,entry_filled,entry_filled_price,"
-        "exit_entered,exit_filled,exit_filled_price,delta)\n");
-      printf("values('%s','%s','%s',%d,'%s','%s',%d,%lf);\n",
+        "exit_entered,exit_filled,exit_filled_price,points,delta)\n");
+      printf("values('%s','%s','%s',%d,'%s','%s',%d,%d,%lf);\n",
         ((transactions[n].eTransType == TRANS_TYPE_BUY) ?
           position_abbrevs[POS_LONG] : position_abbrevs[POS_SHORT]),
         transactions[n].entered,
@@ -163,6 +163,7 @@ int main(int argc,char **argv)
         transactions[m].entered,
         transactions[m].filled,
         transactions[m].filled_price,
+        points,
         current);
 
       transactions[m].processed = true;
