@@ -11,7 +11,7 @@ create table trade (
   exit_entered varchar(20) not null,
   exit_filled varchar(20) not null,
   exit_filled_price smallint not null,
-  points smallint not null,
+  ticks smallint not null,
   delta double not null
 );
 

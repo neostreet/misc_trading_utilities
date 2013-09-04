@@ -1,6 +1,6 @@
 use trading
 
-select count(*),sum(points),sum(delta)
+select count(*),sum(ticks),sum(delta)
 from trade;
 
 quit

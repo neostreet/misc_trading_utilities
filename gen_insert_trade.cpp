@@ -65,7 +65,7 @@ int main(int argc,char **argv)
   char *filled_price_ptr;
   struct transaction work;
   vector<struct transaction> transactions;
-  int points;
+  int ticks;
   double current;
 
   if (argc != 4) {
@@ -146,14 +146,14 @@ int main(int argc,char **argv)
       }
 
       if (transactions[n].eTransType == TRANS_TYPE_BUY)
-        points = transactions[m].filled_price - transactions[n].filled_price;
+        ticks = transactions[m].filled_price - transactions[n].filled_price;
       else
-        points = transactions[n].filled_price - transactions[m].filled_price;
+        ticks = transactions[n].filled_price - transactions[m].filled_price;
 
-      current = ((double)-2 * commission) + multiplier * (double)points;
+      current = ((double)-2 * commission) + multiplier * (double)ticks;
 
       printf("insert into trade(type,entry_entered,entry_filled,entry_filled_price,"
-        "exit_entered,exit_filled,exit_filled_price,points,delta)\n");
+        "exit_entered,exit_filled,exit_filled_price,ticks,delta)\n");
       printf("values('%s','%s','%s',%d,'%s','%s',%d,%d,%lf);\n",
         ((transactions[n].eTransType == TRANS_TYPE_BUY) ?
           position_abbrevs[POS_LONG] : position_abbrevs[POS_SHORT]),
@@ -163,7 +163,7 @@ int main(int argc,char **argv)
         transactions[m].entered,
         transactions[m].filled,
         transactions[m].filled_price,
-        points,
+        ticks,
         current);
 
       transactions[m].processed = true;
