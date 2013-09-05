@@ -53,6 +53,9 @@ int get_transaction(
   char **order_limit_ptr_ptr,
   char **filled_price_ptr_ptr
 );
+char *get_composite_order_type(
+  struct transaction start_transaction,
+  struct transaction end_transaction);
 
 int main(int argc,char **argv)
 {
@@ -76,6 +79,8 @@ int main(int argc,char **argv)
   vector<struct transaction> transactions;
   int ticks;
   double current;
+  int trade_no;
+  char *composite_order_type;
 
   if (argc != 4) {
     printf(usage);
@@ -158,6 +163,8 @@ int main(int argc,char **argv)
     transactions.push_back(work);
   }
 
+  trade_no = 0;
+
   for (n = 0; n < transactions.size(); n++) {
     if (!transactions[n].processed) {
       if (transactions[n].eTransType == TRANS_TYPE_BUY) {
@@ -178,6 +185,16 @@ int main(int argc,char **argv)
         return 5;
       }
 
+      trade_no++;
+
+      composite_order_type = get_composite_order_type(
+        transactions[n],transactions[m]);
+
+      if (composite_order_type == NULL) {
+        printf("get_composite_order_type() failed for trade %d \n",trade_no);
+        return 6;
+      }
+
       if (transactions[n].eTransType == TRANS_TYPE_BUY)
         ticks = transactions[m].filled_price - transactions[n].filled_price;
       else
@@ -185,11 +202,12 @@ int main(int argc,char **argv)
 
       current = ((double)-2 * commission) + multiplier * (double)ticks;
 
-      printf("insert into trade(type,entry_entered,entry_filled,entry_filled_price,"
+      printf("insert into trade(type,composite_order_type,entry_entered,entry_filled,entry_filled_price,"
         "exit_entered,exit_filled,exit_filled_price,ticks,delta)\n");
-      printf("values('%s','%s','%s',%d,'%s','%s',%d,%d,%lf);\n",
+      printf("values('%s','%s','%s','%s',%d,'%s','%s',%d,%d,%lf);\n",
         ((transactions[n].eTransType == TRANS_TYPE_BUY) ?
           position_abbrevs[POS_LONG] : position_abbrevs[POS_SHORT]),
+        composite_order_type,
         transactions[n].entered,
         transactions[n].filled,
         transactions[n].filled_price,
@@ -306,4 +324,41 @@ int get_transaction(
     return -1;
 
   return 0;
+}
+
+static char *composite_order_types[] = {
+  "Market - Market",
+  "Market - Limit",
+  "Market - Stop Market",
+  "Limit - Market",
+  "Limit - Limit",
+  "Limit - Stop Market",
+  "Stop Market - Market",
+  "Stop Market - Limit",
+  "Stop Market - Stop Market"
+};
+
+char *get_composite_order_type(
+  struct transaction start_transaction,
+  struct transaction end_transaction)
+{
+  int composite_order_type_ix;
+
+  if (start_transaction.stop == -1) {
+    if (start_transaction.order_limit == -1)
+      composite_order_type_ix = 0;
+    else
+      composite_order_type_ix = 3;
+  }
+  else
+    composite_order_type_ix = 6;
+
+  if (end_transaction.stop == -1) {
+    if (end_transaction.order_limit != -1)
+      composite_order_type_ix += 1;
+  }
+  else
+    composite_order_type_ix += 2;
+
+  return composite_order_types[composite_order_type_ix];
 }
