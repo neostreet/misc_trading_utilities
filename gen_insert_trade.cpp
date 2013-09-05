@@ -1,3 +1,4 @@
+#include <string>
 #include <vector>
 #include <stdio.h>
 #include <string.h>
@@ -15,6 +16,8 @@ struct transaction {
   enumTransType eTransType;
   char entered[MAX_DATESTR_LEN+1];
   char filled[MAX_DATESTR_LEN+1];
+  int stop;
+  int order_limit;
   int filled_price;
   bool processed;
 };
@@ -46,6 +49,8 @@ int get_transaction(
   char **type_ptr_ptr,
   char **entered_ptr_ptr,
   char **filled_ptr_ptr,
+  char **stop_ptr_ptr,
+  char **order_limit_ptr_ptr,
   char **filled_price_ptr_ptr
 );
 
@@ -58,10 +63,14 @@ int main(int argc,char **argv)
   FILE *fptr;
   int line_len;
   int line_no;
+  vector<string> lines;
+  char *curr_line;
   int retval;
   char *type_ptr;
   char *entered_ptr;
   char *filled_ptr;
+  char *stop_ptr;
+  char *order_limit_ptr;
   char *filled_price_ptr;
   struct transaction work;
   vector<struct transaction> transactions;
@@ -73,13 +82,13 @@ int main(int argc,char **argv)
     return 1;
   }
 
+  sscanf(argv[1],"%lf",&multiplier);
+  sscanf(argv[2],"%lf",&commission);
+
   if ((fptr = fopen(argv[3],"r")) == NULL) {
     printf(couldnt_open,argv[3]);
     return 2;
   }
-
-  sscanf(argv[1],"%lf",&multiplier);
-  sscanf(argv[2],"%lf",&commission);
 
   printf("use trading\n\n");
 
@@ -93,10 +102,25 @@ int main(int argc,char **argv)
 
     line_no++;
 
-    retval = get_transaction(line,line_len,line_no,
+    if (line_no >= 3)
+      lines.push_back(line);
+  }
+
+  fclose(fptr);
+
+  line_no = lines.size();
+
+  for (n = line_no - 1; (n >= 0); n--) {
+    curr_line = (char *)lines[n].c_str();
+    line_len = strlen(curr_line);
+    line_no = lines.size() - n;
+
+    retval = get_transaction(curr_line,line_len,line_no,
       &type_ptr,
       &entered_ptr,
       &filled_ptr,
+      &stop_ptr,
+      &order_limit_ptr,
       &filled_price_ptr);
 
     if (retval == -1)
@@ -118,12 +142,21 @@ int main(int argc,char **argv)
 
     strcpy(work.entered,entered_ptr);
     strcpy(work.filled,filled_ptr);
+
+    if (!strlen(stop_ptr))
+      work.stop = -1;
+    else
+      sscanf(stop_ptr,"%d",&work.stop);
+
+    if (!strcmp(order_limit_ptr,"Market"))
+      work.order_limit = -1;
+    else
+      sscanf(order_limit_ptr,"%d",&work.order_limit);
+
     sscanf(filled_price_ptr,"%d",&work.filled_price);
     work.processed = false;
     transactions.push_back(work);
   }
-
-  fclose(fptr);
 
   for (n = 0; n < transactions.size(); n++) {
     if (!transactions[n].processed) {
@@ -207,6 +240,8 @@ int get_transaction(
   char **type_ptr_ptr,
   char **entered_ptr_ptr,
   char **filled_ptr_ptr,
+  char **stop_ptr_ptr,
+  char **order_limit_ptr_ptr,
   char **filled_price_ptr_ptr
 )
 {
@@ -245,6 +280,14 @@ int get_transaction(
           break;
         case 5:
           *type_ptr_ptr = &line[n+1];
+
+          break;
+        case 9:
+          *stop_ptr_ptr = &line[n+1];
+
+          break;
+        case 10:
+          *order_limit_ptr_ptr = &line[n+1];
 
           break;
         case 11:
