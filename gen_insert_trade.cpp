@@ -53,7 +53,7 @@ int get_transaction(
   char **order_limit_ptr_ptr,
   char **filled_price_ptr_ptr
 );
-char *get_composite_order_type(
+char *get_composite_trade_type(
   struct transaction start_transaction,
   struct transaction end_transaction);
 
@@ -80,7 +80,7 @@ int main(int argc,char **argv)
   int ticks;
   double current;
   int trade_no;
-  char *composite_order_type;
+  char *composite_trade_type;
 
   if (argc != 4) {
     printf(usage);
@@ -187,11 +187,11 @@ int main(int argc,char **argv)
 
       trade_no++;
 
-      composite_order_type = get_composite_order_type(
+      composite_trade_type = get_composite_trade_type(
         transactions[n],transactions[m]);
 
-      if (composite_order_type == NULL) {
-        printf("get_composite_order_type() failed for trade %d \n",trade_no);
+      if (composite_trade_type == NULL) {
+        printf("get_composite_trade_type() failed for trade %d \n",trade_no);
         return 6;
       }
 
@@ -202,12 +202,12 @@ int main(int argc,char **argv)
 
       current = ((double)-2 * commission) + multiplier * (double)ticks;
 
-      printf("insert into trade(type,composite_order_type,entry_entered,entry_filled,entry_filled_price,"
+      printf("insert into trade(type,composite_trade_type,entry_entered,entry_filled,entry_filled_price,"
         "exit_entered,exit_filled,exit_filled_price,ticks,delta)\n");
       printf("values('%s','%s','%s','%s',%d,'%s','%s',%d,%d,%lf);\n",
         ((transactions[n].eTransType == TRANS_TYPE_BUY) ?
           position_abbrevs[POS_LONG] : position_abbrevs[POS_SHORT]),
-        composite_order_type,
+        composite_trade_type,
         transactions[n].entered,
         transactions[n].filled,
         transactions[n].filled_price,
@@ -326,7 +326,7 @@ int get_transaction(
   return 0;
 }
 
-static char *composite_order_types[] = {
+static char *composite_trade_types[] = {
   "Market - Market",
   "Market - Limit",
   "Market - Stop Market",
@@ -338,27 +338,27 @@ static char *composite_order_types[] = {
   "Stop Market - Stop Market"
 };
 
-char *get_composite_order_type(
+char *get_composite_trade_type(
   struct transaction start_transaction,
   struct transaction end_transaction)
 {
-  int composite_order_type_ix;
+  int composite_trade_type_ix;
 
   if (start_transaction.stop == -1) {
     if (start_transaction.order_limit == -1)
-      composite_order_type_ix = 0;
+      composite_trade_type_ix = 0;
     else
-      composite_order_type_ix = 3;
+      composite_trade_type_ix = 3;
   }
   else
-    composite_order_type_ix = 6;
+    composite_trade_type_ix = 6;
 
   if (end_transaction.stop == -1) {
     if (end_transaction.order_limit != -1)
-      composite_order_type_ix += 1;
+      composite_trade_type_ix += 1;
   }
   else
-    composite_order_type_ix += 2;
+    composite_trade_type_ix += 2;
 
-  return composite_order_types[composite_order_type_ix];
+  return composite_trade_types[composite_trade_type_ix];
 }
