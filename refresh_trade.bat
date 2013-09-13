@@ -7,4 +7,4 @@ mysql_grab trades2
 mysql_grab position
 mysql_grab type
 mysql_grab type_delta
-mysql_grab sum_delta
+mysql_grab sum_delta3
