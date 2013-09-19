@@ -1,8 +1,8 @@
 use trading
 
-select sum(delta),sum(ticks),left(entry_filled,5),count(*)
+select sum(delta),count(*),sum(ticks),left(entry_filled,5)
 from trade
-group by 3
-order by 3;
+group by 4
+order by 4;
 
 quit
