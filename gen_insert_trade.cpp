@@ -53,9 +53,7 @@ int get_transaction(
   char **order_limit_ptr_ptr,
   char **filled_price_ptr_ptr
 );
-char *get_composite_trade_type(
-  struct transaction start_transaction,
-  struct transaction end_transaction);
+char *get_order_type(struct transaction transaction);
 
 int main(int argc,char **argv)
 {
@@ -80,7 +78,6 @@ int main(int argc,char **argv)
   int ticks;
   double current;
   int trade_no;
-  char *composite_trade_type;
 
   if (argc != 4) {
     printf(usage);
@@ -187,14 +184,6 @@ int main(int argc,char **argv)
 
       trade_no++;
 
-      composite_trade_type = get_composite_trade_type(
-        transactions[n],transactions[m]);
-
-      if (composite_trade_type == NULL) {
-        printf("get_composite_trade_type() failed for trade %d \n",trade_no);
-        return 6;
-      }
-
       if (transactions[n].eTransType == TRANS_TYPE_BUY)
         ticks = transactions[m].filled_price - transactions[n].filled_price;
       else
@@ -202,16 +191,26 @@ int main(int argc,char **argv)
 
       current = ((double)-2 * commission) + multiplier * (double)ticks;
 
-      printf("insert into trade(type,composite_trade_type,entry_entered,entry_filled,entry_filled_price,"
-        "exit_entered,exit_filled,exit_filled_price,ticks,delta)\n");
-      printf("values('%s','%s','%s','%s',%d,'%s','%s',%d,%d,%lf);\n",
+      printf("insert into trade(type,"
+        "entry_order_type,entry_entered,entry_stop,entry_order_limit,entry_filled,entry_filled_price,"
+        "exit_order_type,exit_entered,exit_stop,exit_order_limit,exit_filled,exit_filled_price,"
+        "ticks,delta)\n");
+      printf("values('%s',"
+        "'%s','%s',%d,%d,'%s',%d,"
+        "'%s','%s',%d,%d,'%s',%d,"
+        "%d,%lf);\n",
         ((transactions[n].eTransType == TRANS_TYPE_BUY) ?
           position_abbrevs[POS_LONG] : position_abbrevs[POS_SHORT]),
-        composite_trade_type,
+        get_order_type(transactions[n]),
         transactions[n].entered,
+        transactions[n].stop,
+        transactions[n].order_limit,
         transactions[n].filled,
         transactions[n].filled_price,
+        get_order_type(transactions[m]),
         transactions[m].entered,
+        transactions[m].stop,
+        transactions[m].order_limit,
         transactions[m].filled,
         transactions[m].filled_price,
         ticks,
@@ -326,39 +325,26 @@ int get_transaction(
   return 0;
 }
 
-static char *composite_trade_types[] = {
-  "Market - Market",
-  "Market - Limit",
-  "Market - Stop Market",
-  "Limit - Market",
-  "Limit - Limit",
-  "Limit - Stop Market",
-  "Stop Market - Market",
-  "Stop Market - Limit",
-  "Stop Market - Stop Market"
+enum enumOrderType {
+ ORDER_TYPE_MARKET,
+ ORDER_TYPE_LIMIT,
+ ORDER_TYPE_STOP_MARKET
 };
 
-char *get_composite_trade_type(
-  struct transaction start_transaction,
-  struct transaction end_transaction)
+static char *order_types[] = {
+  "Market",
+  "Limit",
+  "Stop Market"
+};
+
+char *get_order_type(struct transaction transaction)
 {
-  int composite_trade_type_ix;
-
-  if (start_transaction.stop == -1) {
-    if (start_transaction.order_limit == -1)
-      composite_trade_type_ix = 0;
+  if (transaction.stop == -1) {
+    if (transaction.order_limit == -1)
+      return order_types[ORDER_TYPE_MARKET];
     else
-      composite_trade_type_ix = 3;
+      return order_types[ORDER_TYPE_LIMIT];
   }
   else
-    composite_trade_type_ix = 6;
-
-  if (end_transaction.stop == -1) {
-    if (end_transaction.order_limit != -1)
-      composite_trade_type_ix += 1;
-  }
-  else
-    composite_trade_type_ix += 2;
-
-  return composite_trade_types[composite_trade_type_ix];
+    return order_types[ORDER_TYPE_STOP_MARKET];
 }
