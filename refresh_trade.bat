@@ -9,3 +9,4 @@ mysql_grab type
 mysql_grab type_delta
 mysql_grab sum_delta3
 mysql_grab composite_trade_type2
+mysql_grab ticks1
