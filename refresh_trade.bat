@@ -4,6 +4,7 @@ call tomysql < zap_trade.sql
 call tomysql < futures1_orders.txt%1.gen_insert_trade.sql
 mysql_grab trades
 mysql_grab trades2
+mysql_grab trades2b
 mysql_grab delta
 mysql_grab position
 mysql_grab type
